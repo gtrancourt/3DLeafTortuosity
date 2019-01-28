@@ -5,7 +5,7 @@ from skimage.measure import label
 from scipy import ndimage
 
 def Threshold(input_img, Th_value):
-    tmp = np.zeros(input_img.shape, dtype=np.float32)
+    tmp = np.zeros(input_img.shape, dtype=np.bool)
     if isinstance(Th_value, int):
         tmp[input_img == Th_value] = 1
     else:
@@ -14,13 +14,13 @@ def Threshold(input_img, Th_value):
         else:
             for i in range(len(Th_value)):
                 tmp[input_img == Th_value[i]] = 1
-    return tmp 
+    return tmp
 
 def DisplayRndSlices(input_img, nb_of_slices=2):
     for i in random.sample(range(input_img.shape[0]), nb_of_slices):
         io.imshow(input_img[i,:,:])
         io.show()
-        
+
 
 # EdgeDetector3D detects the edge and is not equivalent to ImageJ's Binary > Outline if used on the airspace stack
 # There's a Gaussian filter beging applied (sigma=). Using a low value doesn't necessarily close the edges.
@@ -28,7 +28,7 @@ def DisplayRndSlices(input_img, nb_of_slices=2):
 # Speed is ok but there is room for improvement
 # see here for potential solution: https://stackoverflow.com/questions/29434533/edge-detection-for-image-stored-in-matrix
 def EdgeDetector3D(input_img):
-    tmp = np.zeros(input_img.shape)  
+    tmp = np.zeros(input_img.shape)
     for i in range(input_img.shape[0]):
         tmp[i,:,:] = feature.canny(input_img[i,:,:], sigma=0.33)
     return tmp
@@ -52,15 +52,15 @@ def Outline2D(input_img):
     # create masks for the two kinds of edges
     black_white_edges = (filters.rank.minimum(img, selem) == 0) & (filters.rank.maximum(img, selem) == 255)
     # create a color image
-    img_result = np.dstack( [img_zero,img_zero,img_zero] )    
+    img_result = np.dstack( [img_zero,img_zero,img_zero] )
     # assign colors to edge masks
     img_result[ black_white_edges, : ] = np.asarray( [ 0, 255, 0 ] )
     img_result = color.rgb2gray(img_result) * 255
-    img_result = img_result.astype(np.uint8)    
+    img_result = img_result.astype(np.uint8)
     return img_result
 
 def Outline3D(input_img):
-    tmp = np.zeros(input_img.shape)  
+    tmp = np.zeros(input_img.shape)
     for i in range(input_img.shape[0]):
         tmp[i,:,:] = Outline2D(input_img[i,:,:])
     return tmp
@@ -95,6 +95,5 @@ def getLargestAirspace(input_img):
     else:
         largest_airspace_label = labels_index_sort[-1]
     # Create a new image
-    largest_airspace = np.uint8(labeled_img == largest_airspace_label)
+    largest_airspace = (labeled_img == largest_airspace_label)
     return largest_airspace
-
