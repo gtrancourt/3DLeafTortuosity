@@ -2,7 +2,7 @@
 
 This code has now moved entirely into the [microCT leaf traits repository](https://github.com/gtrancourt/microCT-leaf-traits). The tortuosity code is stable there: it was still under development here. This repo will be removed eventually.
 
-##Computing plant leaf tortuosity from microCT stacks
+## Computing plant leaf tortuosity from microCT stacks
 
 Recent updates:
 
