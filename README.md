@@ -1,10 +1,13 @@
 # 3DLeafTortuosity
-Computing plant leaf tortuosity from microCT stacks
+
+This code has now moved entirely into the [microCT leaf traits repository](https://github.com/gtrancourt/microCT-leaf-traits). The tortuosity code is stable there: it was still under development here. This repo will be removed eventually.
+
+##Computing plant leaf tortuosity from microCT stacks
 
 Recent updates:
 
 __2018-04-27__
-- Added stomata lbelling method in the preamble.
+- Added stomata labelling method in the preamble.
 - Splitted cells here and there to separate some bits.
 - Moved older updates to README.md
 
