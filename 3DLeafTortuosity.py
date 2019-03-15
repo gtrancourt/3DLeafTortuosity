@@ -83,12 +83,12 @@ rescale_factor = 2
 
 
 # Read composite stack including slabelling of stomata
-composite_stack_large = io.imread(filepath + sample_name + 'SEGMENTED-w-stomata-cropped-for-tortuosity.tif')
+composite_stack_large = io.imread(filepath + sample_name + 'SEGMENTED-w-stomata.tif')
 composite_stack = np.asarray(StackResize(composite_stack_large, rescale_factor), dtype='uint8')
 
 print(composite_stack_large.shape)
 print(composite_stack.shape)
-print(np.unique(composite_stack[100:500,:,:])) # to get all the unique values
+print(np.unique(composite_stack)) # to get all the unique values
 
 DisplayRndSlices(composite_stack, 4)
 
@@ -161,6 +161,13 @@ mask = ~largest_airspace.astype(bool)
 stomata_stack = np.asarray(Threshold(composite_stack, stomata_value), np.bool)
 stom_mask = invert(stomata_stack)
 
+# Check if stomata stack does include values
+# Will throw an error if at least one stomata is disconnected from the airspace
+if np.sum(stomata_stack) == 0:
+    print('ERROR: at least one stomata is disconnected from the airspace!')
+    assert False
+
+print(np.sum(stomata_stack))
 DisplayRndSlices(mask, 2)
 DisplayRndSlices(stom_mask, 2)
 
@@ -188,9 +195,7 @@ DisplayRndSlices(L_euc, 2)
 # In[10]:
 
 
-stomata_airspace_mask = ~stomata_airspace_stack.astype(bool)
 stomata_airspace_mask = ~largest_airspace_w_stomata.astype(bool)
-
 
 largest_airspace_masked_array = np.ma.masked_array(stom_mask, stomata_airspace_mask)
 DisplayRndSlices(largest_airspace_masked_array, 2)
@@ -214,7 +219,9 @@ DisplayRndSlices(L_geo, 2)
 
 Tortuosity_Factor = np.square(L_geo / L_euc)
 DisplayRndSlices(Tortuosity_Factor, 2)
-# io.imsave(filepath + 'Python_tortuosity.tif', np.asarray(Tortuosity_Factor, dtype="float32"))
+
+# You can save it to you folder by un-commenting the line below.
+#io.imsave(filepath + 'Python_tortuosity.tif', np.asarray(Tortuosity_Factor, dtype="float32"))
 
 
 # In[14]:
@@ -242,7 +249,7 @@ print(np.max(Tortuosity_at_mesophyll_surface))
 
 
 # To save
-# io.imsave(filepath + 'Python_tortuosity.tif', np.asarray(Tortuosity_Factor * airspace_edge_bool, dtype="float32"))
+io.imsave(filepath + 'Python_tortuosity.tif', np.asarray(Tortuosity_Factor * airspace_edge_bool, dtype="float32"))
 
 
 # In[16]:
@@ -258,24 +265,32 @@ for item in Tortuosity_at_mesophyll_surface:
 
 # In[17]:
 
+# To get the _abaxial_ epidermis layer as a single line
+epidermis_ab_stack = np.asarray(Threshold(composite_stack, epidermis_ab_value), np.bool)
+epidermis_ab_stack_shifted_down = np.roll(epidermis_ab_stack, 1, axis=1)
+epidermis_edge_bottom = Threshold(invert(epidermis_ab_stack) + epidermis_ab_stack_shifted_down , 0)
+DisplayRndSlices(epidermis_edge_bottom, 2)
+
 
 # Get the epidermal layer map
-mesophyll_stack_shifted_up = np.roll(mesophyll_stack, -1, axis=1)
-mesophyll_stack_shifted_down = np.roll(mesophyll_stack, 1, axis=1)
-epidermis_edge_bottom = Threshold(invert(mesophyll_stack) + mesophyll_stack_shifted_up , 0)
-epidermis_edge_top = Threshold(invert(mesophyll_stack) + mesophyll_stack_shifted_down , 0)
-amphistomatous_epidermis = Threshold(epidermis_edge_bottom + epidermis_edge_top, 1)
-DisplayRndSlices(epidermis_edge_bottom, 1)
-DisplayRndSlices(epidermis_edge_top, 1)
-DisplayRndSlices(amphistomatous_epidermis, 1)
+#mesophyll_stack = np.asarray(Threshold(composite_stack, [mesophyll_value,vein_value,ias_value,stomata_value]), np.bool)
+#    
+#mesophyll_stack_shifted_up = np.roll(mesophyll_stack, -1, axis=1)
+#mesophyll_stack_shifted_down = np.roll(mesophyll_stack, 1, axis=1)
+#epidermis_edge_bottom = Threshold(invert(mesophyll_stack) + mesophyll_stack_shifted_up , 0)
+#epidermis_edge_top = Threshold(invert(mesophyll_stack) + mesophyll_stack_shifted_down , 0)
+#amphistomatous_epidermis = Threshold(epidermis_edge_bottom + epidermis_edge_top, 1)
+#DisplayRndSlices(epidermis_edge_bottom, 1)
+#DisplayRndSlices(epidermis_edge_top, 1)
+#DisplayRndSlices(amphistomatous_epidermis, 1)
 
 
 # In[18]:
 
 
 # Compute L_epi
-epidermis_mask = invert(np.asarray(epidermis_edge_bottom, dtype='bool'))
-# DisplayRndSlices(epidermis_mask, 2)
+epidermis_mask = invert(epidermis_edge_bottom)
+DisplayRndSlices(epidermis_mask, 2)
 
 t0 = time.time()
 L_epi = np.ma.masked_array(distance_transform_edt(epidermis_mask), mask)
@@ -296,7 +311,7 @@ DisplayRndSlices(Lateral_diffusivity, 2)
 
 
 Lateral_diffusivity_at_airspace_edge = Lateral_diffusivity[airspace_edge_bool]
-# Lateral_diffusivity_at_airspace_edge = Lateral_diffusivity_at_airspace_edge[Lateral_diffusivity_at_airspace_edge > 1]
+Lateral_diffusivity_at_airspace_edge = Lateral_diffusivity_at_airspace_edge[Lateral_diffusivity_at_airspace_edge > 1]
 print(np.median(Lateral_diffusivity_at_airspace_edge))
 print(stats.describe(Lateral_diffusivity_at_airspace_edge))
 print(np.nanmean(Lateral_diffusivity_at_airspace_edge))
@@ -311,9 +326,9 @@ print(np.nanmax(Lateral_diffusivity_at_airspace_edge))
 
 
 ## To save a stack of lateral diffusivity at the airspace edge
-# Lateral_diffusivity_img = Lateral_diffusivity
-# Lateral_diffusivity_img[airspace_edge_bool == 0] = 0
-# io.imsave(filepath + 'Python_lateral_diffusivity-3.tif', np.asarray(Lateral_diffusivity_img, dtype="float32"))
+Lateral_diffusivity_img = Lateral_diffusivity
+Lateral_diffusivity_img[airspace_edge_bool == 0] = 0
+io.imsave(filepath + 'Python_lateral_diffusivity-3.tif', np.asarray(Lateral_diffusivity_img, dtype="float32"))
 
 
 # In[22]:
@@ -324,3 +339,11 @@ thefile = open(filepath + 'Lateral_diffusivity_at_airspace_edge.txt', 'w')
 for item in Lateral_diffusivity_at_airspace_edge:
     thefile.write("%s\n" % item)
 
+
+#%%
+
+# To analyse tortuosity in full stomatal regions (i.e. regions influenced by a
+# single stomata and not touching the edges, meaning they are complete), we
+# need first to find full regions. To do this, we need to apply a Voronoi
+# filter to find the regions around the stomata. Then, within those regions,
+# compute summary statistics for tortuosity and lateral diffusivity.
